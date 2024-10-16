@@ -48,7 +48,7 @@ done
 NAMESPACE="${NAMESPACE:-$DEFAULT_NAMESPACE}"
 ORIGINAL_DEPLOYMENT_NAME="${ORIGINAL_DEPLOYMENT_NAME:-$DEFAULT_DEPLOYMENT_NAME}"
 
-NEW_DEPLOYMENT_NAME="${ORIGINAL_DEPLOYMENT_NAME}-test"
+NEW_DEPLOYMENT_NAME="${ORIGINAL_DEPLOYMENT_NAME}-TEST"
 
 # Verifica la connessione al cluster
 if ! kubectl cluster-info > /dev/null 2>&1; then
@@ -75,6 +75,7 @@ kubectl get deployment "$ORIGINAL_DEPLOYMENT_NAME" -n "$NAMESPACE" -o yaml | sed
 yq e 'del(.metadata.uid, .metadata.resourceVersion, .metadata.creationTimestamp, .metadata.generation, .metadata.managedFields)' -i ./original-deployment.yaml
 
 # Modifica il nome del deployment
+yq e ".spec.replicas = 1" -i ./original-deployment.yaml
 yq e ".metadata.name = \"$NEW_DEPLOYMENT_NAME\"" -i ./original-deployment.yaml
 
 # Rimuovi il servizio se presente
