@@ -36,7 +36,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Verifica se il namespace esiste
+	// Verifica se il namespace esiste nel cluster
 	if err := runCommandSilent("kubectl", "get", "namespace", namespace); err != nil {
 		fmt.Printf("Errore: il namespace '%s' non esiste.", namespace)
 		os.Exit(1)
