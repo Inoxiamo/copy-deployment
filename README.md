@@ -14,6 +14,21 @@ Adjust labels to differentiate the new deployment from the original.
 
 ## Prerequisites
 
+
+### Installing yq
+
+For **Linux**:
+```bash
+sudo wget https://github.com/mikefarah/yq/releases/download/v4.34.1/yq_linux_amd64 -O /usr/bin/yq
+sudo chmod +x /usr/bin/yq
+```
+
+For **Windows**:
+```shell
+winget install --id MikeFarah.yq
+```
+
+
 To use this script, you need the following tools installed and configured on your machine:
 
 Bash Shell: Ensure you have a Bash environment available.
