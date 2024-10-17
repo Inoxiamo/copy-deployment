@@ -31,19 +31,19 @@ func main() {
 	newDeploymentName := deploymentName + "-test-debug"
 
 	// Verifica la connessione al cluster
-	if err := runCommand("kubectl", "cluster-info"); err != nil {
+	if err := runCommandSilent("kubectl", "cluster-info"); err != nil {
 		fmt.Println("Errore: impossibile connettersi al cluster Kubernetes.")
 		os.Exit(1)
 	}
 
 	// Verifica se il namespace esiste
-	if err := runCommand("kubectl", "get", "namespace", namespace); err != nil {
+	if err := runCommandSilent("kubectl", "get", "namespace", namespace); err != nil {
 		fmt.Printf("Errore: il namespace '%s' non esiste.", namespace)
 		os.Exit(1)
 	}
 
 	// Verifica se il deployment originale esiste
-	if err := runCommand("kubectl", "get", "deployment", deploymentName, "-n", namespace); err != nil {
+	if err := runCommandSilent("kubectl", "get", "deployment", deploymentName, "-n", namespace); err != nil {
 		fmt.Printf("Errore: il deployment '%s' non esiste nel namespace '%s'.", deploymentName, namespace)
 		os.Exit(1)
 	}
@@ -109,7 +109,7 @@ func main() {
 
 func runCommand(name string, args ...string) error {
 	cmd := exec.Command(name, args...)
-	cmd.Stdout = os.Stdout
+	// cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
