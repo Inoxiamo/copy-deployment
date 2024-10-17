@@ -36,14 +36,15 @@ Usage
 ```
 
 Parameters
-
+```
 -n namespace (optional): The namespace of the deployment to duplicate. Defaults to da.
 
 -d deployment_name (optional): The name of the deployment to duplicate. Defaults to api.
 
 -l label_key (optional): The label key used for differentiating the deployment. Defaults to app.
+```
 
-Example
+### Example
 
 To duplicate a deployment named api in the default namespace:
 
@@ -63,7 +64,7 @@ YAML Extraction: The script extracts the deployment's configuration into a YAML 
 
 Modify Deployment:
 
-The new deployment name is set by appending -TEST to the original name.
+The new deployment name is set by appending *-test-debug* to the original name.
 
 The number of replicas is forced to 1.
 
