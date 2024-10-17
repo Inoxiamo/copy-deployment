@@ -1,6 +1,6 @@
 # Kubernetes Deployment Copy Script
 
-This repository contains a Bash script for duplicating an existing Kubernetes deployment, appending the suffix "-test" to the duplicated deployment. The script is designed to create a copy of an existing deployment while maintaining important configurations such as serviceAccount, configMap, secrets, and image, and forcing the number of replicas to 1.
+This repository contains a Bash script for duplicating an existing Kubernetes deployment, appending the suffix "*-test-debug*" to the duplicated deployment. The script is designed to create a copy of an existing deployment while maintaining important configurations such as serviceAccount, configMap, secrets, and image, and forcing the number of replicas to 1.
 
 ## Features
 
@@ -52,7 +52,7 @@ To duplicate a deployment named api in the default namespace:
 ./copy-deployment.sh -n default -d api -l app
 ```
 
-This will create a new deployment named api-test in the default namespace, with 1 replica and modified labels to differentiate it from the original.
+This will create a new deployment named *api-test-debug* in the default namespace, with 1 replica and modified labels to differentiate it from the original.
 
 ## How It Works
 
