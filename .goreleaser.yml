@@ -1,4 +1,5 @@
 project_name: copy-deployment
+version: '2'
 builds:
   - os: [linux, darwin, windows]
     goos:
