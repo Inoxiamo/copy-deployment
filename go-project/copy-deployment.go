@@ -48,7 +48,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Verifica se il nuovo deployment esiste già
+	// Verifica se il nuovo deployment esiste già nel cluster
 	exists, err := deploymentExists(newDeploymentName, namespace)
 	if err != nil {
 		fmt.Printf("Errore durante la verifica dell'esistenza del deployment: %v", err)
