@@ -68,6 +68,19 @@ if ! kubectl get deployment "$ORIGINAL_DEPLOYMENT_NAME" -n "$NAMESPACE" > /dev/n
     exit 1
 fi
 
+
+# Verifica se il nuovo deployment esiste già
+if kubectl get deployment "$NEW_DEPLOYMENT_NAME" -n "$NAMESPACE" > /dev/null 2>&1; then
+    read -p "Il deployment '$NEW_DEPLOYMENT_NAME' esiste già. Inserisci un nuovo suffisso/nome: " NEW_SUFFIX
+    NEW_DEPLOYMENT_NAME="${ORIGINAL_DEPLOYMENT_NAME}-test-debug-${NEW_SUFFIX}"
+
+    # Ricontrolla se il nuovo nome esiste già
+    if kubectl get deployment "$NEW_DEPLOYMENT_NAME" -n "$NAMESPACE" > /dev/null 2>&1; then
+        echo "Errore: impossibile procedere. Chiusura dell'applicativo. Il deployment con nome '$NEW_DEPLOYMENT_NAME' esiste già." >&2
+        exit 1
+    fi
+fi
+
 # Estrai il deployment originale in formato YAML
 kubectl get deployment "$ORIGINAL_DEPLOYMENT_NAME" -n "$NAMESPACE" -o yaml | sed '/^status:$/,/^[^ ]/d' > ./original-deployment.yaml
 
