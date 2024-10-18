@@ -13,6 +13,22 @@ jobs:
     name: Build and Release
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        goos: [linux, windows, darwin]
+        goarch: [amd64]
+        # Define output filenames based on OS and architecture
+        include:
+          - goos: linux
+            goarch: amd64
+            output_name: copy-deployment-linux-amd64
+          - goos: windows
+            goarch: amd64
+            output_name: copy-deployment-windows-amd64.exe
+          - goos: darwin
+            goarch: amd64
+            output_name: copy-deployment-darwin-amd64
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -22,21 +38,33 @@ jobs:
         with:
           go-version: '1.22'
 
-      - name: Build for Linux
-        run: GOOS=linux GOARCH=amd64 go build -o copy-deployment-linux-amd64 copy-deployment.go
+      - name: Build for ${{ matrix.goos }}/${{ matrix.goarch }}
+        run: |
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o ${{ matrix.output_name }} ./cmd/copy-deployment
 
-      - name: Build for Windows
-        run: GOOS=windows GOARCH=amd64 go build -o copy-deployment-windows-amd64.exe copy-deployment.go
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.output_name }}
+          path: ${{ matrix.output_name }}
 
-      - name: Build for macOS
-        run: GOOS=darwin GOARCH=amd64 go build -o copy-deployment-darwin-amd64 copy-deployment.go
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: ./artifacts
 
       - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            ./copy-deployment-linux-amd64
-            ./copy-deployment-windows-amd64.exe
-            ./copy-deployment-darwin-amd64
+          files: ./artifacts/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
