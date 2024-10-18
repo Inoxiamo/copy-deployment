@@ -1,5 +1,3 @@
-// pkg/deployment/utils.go
-
 package deployment
 
 import (
@@ -10,18 +8,27 @@ import (
 	"strings"
 )
 
+// RunCommand runs a command with the given arguments and returns an error if the
+// command fails.  The command's stderr is connected to os.Stderr.
 func RunCommand(name string, args ...string) error {
 	cmd := exec.Command(name, args...)
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
 
+// RunCommandSilent runs a command with the given arguments and returns an error
+// if the command fails.  The command's stderr is discarded.
 func RunCommandSilent(name string, args ...string) error {
 	cmd := exec.Command(name, args...)
 	cmd.Stderr = nil
 	return cmd.Run()
 }
 
+// DeploymentExists checks if a Kubernetes deployment with the given name exists
+// in the specified namespace. It runs the "kubectl get deployment" command and
+// parses the output to determine existence. If the deployment is not found, it
+// returns false with no error. If any other error occurs, it returns false with
+// the corresponding error. If the deployment exists, it returns true.
 func DeploymentExists(deploymentName, namespace string) (bool, error) {
 	cmd := exec.Command("kubectl", "get", "deployment", deploymentName, "-n", namespace)
 	stderr, err := cmd.StderrPipe()
@@ -52,6 +59,9 @@ func DeploymentExists(deploymentName, namespace string) (bool, error) {
 	return true, nil
 }
 
+// RunCommandAndWriteToFile runs the given command and writes its output to the specified file.
+// If a file with the given name already exists, it will be overwritten.
+// If the command fails, the function will return the command's error.
 func RunCommandAndWriteToFile(name string, args []string, filename string) error {
 	cmd := exec.Command(name, args...)
 	output, err := cmd.Output()

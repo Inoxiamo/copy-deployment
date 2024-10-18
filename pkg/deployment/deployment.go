@@ -1,5 +1,3 @@
-// pkg/deployment/deployment.go
-
 package deployment
 
 import (
@@ -9,6 +7,18 @@ import (
 	"strings"
 )
 
+// Execute runs the deployment duplication process.
+//
+// The function takes two optional command-line arguments:
+//
+// -n <namespace>: the namespace where the deployment resides. Defaults to "namespace-test".
+//
+// -d <deployment_name>: the name of the deployment to duplicate. Defaults to "deployment-test".
+//
+// The function will check that the namespace and deployment exist in the cluster.
+// If the deployment already exists, the function will prompt the user to enter a new suffix.
+// The function will then extract the original deployment in YAML format, remove system-managed fields,
+// modify the deployment name and replica count, apply the new deployment, and clean up the temporary file.
 func Execute() {
 	defaultNamespace := "namespace-test"
 	defaultDeploymentName := "deployment-test"

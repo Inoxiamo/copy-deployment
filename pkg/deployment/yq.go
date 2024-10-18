@@ -1,5 +1,3 @@
-// pkg/deployment/yq.go
-
 package deployment
 
 import (
@@ -12,11 +10,22 @@ import (
 	"runtime"
 )
 
+// CheckYqInstalled checks if yq is installed on the system.
+//
+// It returns true if yq is installed and false otherwise.
 func CheckYqInstalled() bool {
 	_, err := exec.LookPath("yq")
 	return err == nil
 }
 
+// InstallYq installs yq on the system if it is not already installed.
+//
+// The function will download the yq binary from the GitHub releases page and
+// install it in the temporary directory. It will then add the temporary directory
+// to the PATH environment variable so that the yq command can be executed.
+//
+// The function returns nil if the installation is successful and an error if
+// there are any issues during the installation process.
 func InstallYq() error {
 	osName := runtime.GOOS
 	arch := runtime.GOARCH
