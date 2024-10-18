@@ -9,7 +9,8 @@ permissions:
     contents: write
     packages: write
 
-releases-matrix:
+jobs:
+  releases-matrix:
     name: Release Go Binary
     runs-on: ubuntu-latest
     strategy:
