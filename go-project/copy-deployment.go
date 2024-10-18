@@ -31,10 +31,10 @@ func main() {
 	newDeploymentName := deploymentName + "-test-debug"
 
 	// Verifica la connessione al cluster
-	if err := runCommandSilent("kubectl", "cluster-info"); err != nil {
-		fmt.Println("Errore: impossibile connettersi al cluster Kubernetes.")
-		os.Exit(1)
-	}
+	//if err := runCommandSilent("kubectl", "cluster-info"); err != nil {
+	//fmt.Println("Errore: impossibile connettersi al cluster Kubernetes.")
+	//os.Exit(1)
+	//}
 
 	// Verifica se il namespace esiste nel cluster
 	if err := runCommandSilent("kubectl", "get", "namespace", namespace); err != nil {

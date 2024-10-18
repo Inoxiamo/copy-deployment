@@ -1,34 +1,76 @@
-name: Release
+name: Go Build and Release
 
 on:
   push:
     tags:
       - 'v*'
 
-permissions:
-    contents: write
-    packages: write
-
 jobs:
-  releases-matrix:
-    name: Release Go Binary
+  build:
+    name: Build and Release
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # build and publish in parallel: linux/386, linux/amd64, linux/arm64, windows/386, windows/amd64, darwin/amd64, darwin/arm64
-        goos: [linux, windows]
-        goarch: ["386", amd64, arm64]
-        exclude:
-          - goarch: arm64
-            goos: windows
+
     steps:
-    - uses: actions/checkout@v4
-    - uses: wangyoucao577/go-release-action@v1
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        goos: ${{ matrix.goos }}
-        goarch: ${{ matrix.goarch }}
-        goversion: "https://dl.google.com/go/go1.13.1.linux-amd64.tar.gz"
-        project_path: "./go-project"
-        binary_name: "copy-deployment"
-        extra_files: LICENSE README.md
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
+
+      - name: Build for Linux
+        run: |
+          cd ./go-project
+          GOOS=linux GOARCH=amd64 go build -o copy-deployment-linux-amd64 copy-deployment.go
+
+      - name: Build for Windows
+        run: |
+          cd ./go-project
+          GOOS=windows GOARCH=amd64 go build -o copy-deployment-windows-amd64.exe copy-deployment.go
+
+      - name: Build for macOS
+        run: |
+          cd ./go-project
+          GOOS=darwin GOARCH=amd64 go build -o copy-deployment-darwin-amd64 copy-deployment.go
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Linux Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./go-project/copy-deployment-linux-amd64
+          asset_name: copy-deployment-linux-amd64
+          asset_content_type: application/octet-stream
+
+      - name: Upload Windows Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./go-project/copy-deployment-windows-amd64.exe
+          asset_name: copy-deployment-windows-amd64.exe
+          asset_content_type: application/octet-stream
+
+      - name: Upload macOS Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./go-project/copy-deployment-darwin-amd64
+          asset_name: copy-deployment-darwin-amd64
+          asset_content_type: application/octet-stream
