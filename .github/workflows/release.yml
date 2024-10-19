@@ -9,7 +9,7 @@ permissions:
   contents: write  # Grant write permissions to the workflow
 
 jobs:
-  build:
+  build_and_release:
     name: Build and Release
     runs-on: ubuntu-latest
 
@@ -17,7 +17,6 @@ jobs:
       matrix:
         goos: [linux, windows, darwin]
         goarch: [amd64]
-        # Define output filenames based on OS and architecture
         include:
           - goos: linux
             goarch: amd64
@@ -30,42 +29,31 @@ jobs:
             output_name: copy-deployment-darwin-amd64
 
     steps:
+      # Step 1: Checkout il codice dal repository
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # Step 2: Setup Go
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
           go-version: '1.22'
 
+      # Step 3: Costruisci il progetto per ogni combinazione di OS/architettura
       - name: Build for ${{ matrix.goos }}/${{ matrix.goarch }}
         run: |
-            mkdir -p artifacts  # Crea la cartella artifacts
-            GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o artifacts/${{ matrix.output_name }} ./cmd/copy-deployment
+          mkdir -p artifacts  # Crea la cartella artifacts
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o artifacts/${{ matrix.output_name }} ./cmd/copy-deployment
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ matrix.output_name }}
-          path: artifacts/${{ matrix.output_name }}
+      # Debug: Verifica che i file siano stati creati correttamente
+      - name: List files in artifacts directory (debug)
+        run: ls -la artifacts
 
-  release:
-    name: Create Release
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: ./artifacts/
-
+      # Step 4: Crea la release e carica i binari
       - name: Create Release and Upload Assets
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')  # Esegui solo sui push dei tag
         uses: softprops/action-gh-release@v1
         with:
-          files: ./artifacts/*
+          files: artifacts/*  # Carica tutti i file generati nella cartella artifacts
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
