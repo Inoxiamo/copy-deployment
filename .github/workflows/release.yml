@@ -40,13 +40,14 @@ jobs:
 
       - name: Build for ${{ matrix.goos }}/${{ matrix.goarch }}
         run: |
-          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o ${{ matrix.output_name }} ./cmd/copy-deployment
+            mkdir -p artifacts  # Crea la cartella artifacts
+            GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o artifacts/${{ matrix.output_name }} ./cmd/copy-deployment
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.output_name }}
-          path: ${{ matrix.output_name }}
+          path: artifacts/${{ matrix.output_name }}
 
   release:
     name: Create Release
@@ -60,11 +61,11 @@ jobs:
       - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
-          path: ./
+          path: ./artifacts/
 
       - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v1
         with:
-          files: ./*
+          files: ./artifacts/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
