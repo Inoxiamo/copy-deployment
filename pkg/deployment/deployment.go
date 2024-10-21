@@ -105,7 +105,7 @@ func Execute() {
 	}
 
 	// Remove system-managed fields using yq
-	if err := RunCommand("yq", "e", "del(.metadata.uid, .metadata.resourceVersion, .metadata.creationTimestamp, .metadata.generation, .metadata.managedFields)", "-i", "original-deployment.yaml"); err != nil {
+	if err := RunCommand("yq", "e", "del(.metadata.uid, .metadata.resourceVersion, .metadata.creationTimestamp, .metadata.generation, .metadata.managedFields, .spec.template.spec.containers[].livenessProbe, .spec.template.spec.containers[].readinessProbe)", "-i", "original-deployment.yaml"); err != nil {
 		fmt.Println("Error modifying the deployment with yq.")
 		os.Exit(1)
 	}
