@@ -98,6 +98,7 @@ This will create a new deployment named `api-test-debug` in the default namespac
 
 - `-n`: Specify the namespace of the deployment.
 - `-d`: Specify the name of the deployment.
+- `-t`: [Optional] Specify the tag of the image of the deployment.
 
 ## How It Works
 
