@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 )
 
@@ -15,6 +16,8 @@ import (
 //
 // -d <deployment_name>: the name of the deployment to duplicate. Defaults to "deployment-test".
 //
+// -t <tag_image>: the tag of the image to use for the new deployment. Defaults to an empty string.
+//
 // The function will check that the namespace and deployment exist in the cluster.
 // If the deployment already exists, the function will prompt the user to enter a new suffix.
 // The function will then extract the original deployment in YAML format, remove system-managed fields,
@@ -22,6 +25,7 @@ import (
 func Execute() {
 	defaultNamespace := "namespace-test"
 	defaultDeploymentName := "deployment-test"
+	tagImage := ""
 
 	// Parsing command-line arguments
 	namespace := defaultNamespace
@@ -45,6 +49,11 @@ func Execute() {
 			} else {
 				fmt.Println("Error: missing value for -d")
 				os.Exit(1)
+			}
+		case "-t":
+			i++
+			if i < len(args) {
+				tagImage = args[i]
 			}
 		}
 	}
@@ -118,6 +127,36 @@ func Execute() {
 	if err := RunCommand("yq", "e", fmt.Sprintf(".metadata.name = \"%s\"", newDeploymentName), "-i", "original-deployment.yaml"); err != nil {
 		fmt.Println("Error modifying the deployment name.")
 		os.Exit(1)
+	}
+
+	// Assume tagName is already defined and contains the tag value
+	if tagImage != "" {
+		// Retrieve the current image name
+		output, err := exec.Command("yq", "e", ".spec.template.spec.containers[0].image", "original-deployment.yaml").CombinedOutput()
+		if err != nil {
+			fmt.Printf("Error retrieving the image name: %s\n", err)
+			os.Exit(1)
+		}
+		currentImage := strings.TrimSpace(string(output))
+
+		// Split the image name to separate into parts
+		parts := strings.Split(currentImage, ":")
+		if len(parts) < 2 {
+			fmt.Println("The image name format is unexpected. It should contain two ':' characters separating the registry, name, and tag.")
+			os.Exit(1)
+		}
+
+		// Rebuild the image name with the new tag, keeping registry and name the same
+		parts[len(parts)-1] = tagImage // Replace only the last part, the tag
+		newImage := strings.Join(parts, ":")
+
+		// Update the image in the YAML file
+		if err := exec.Command("yq", "e", fmt.Sprintf(".spec.template.spec.containers[0].image = \"%s\"", newImage), "-i", "original-deployment.yaml").Run(); err != nil {
+			fmt.Println("Error modifying the image tag:", err)
+			os.Exit(1)
+		}
+
+		fmt.Println("Image tag updated successfully.")
 	}
 
 	// Apply the new deployment
