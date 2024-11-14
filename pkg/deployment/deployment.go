@@ -124,8 +124,12 @@ func Execute() {
 		fmt.Println("Error modifying the replica count.")
 		os.Exit(1)
 	}
-	if err := RunCommand("yq", "e", fmt.Sprintf(".metadata.name = \"%s\"", newDeploymentName), "-i", "original-deployment.yaml"); err != nil {
-		fmt.Println("Error modifying the deployment name.")
+	if err := RunCommand("yq", "e",
+		fmt.Sprintf(
+			`.metadata.name = "%s" | .spec.selector.matchLabels.app = "%s" | .spec.template.metadata.labels.app = "%s"`,
+			newDeploymentName, newDeploymentName, newDeploymentName),
+		"-i", "original-deployment.yaml"); err != nil {
+		fmt.Println("Error modifying the deployment name and labels.")
 		os.Exit(1)
 	}
 
