@@ -78,11 +78,12 @@ chmod +x copy-deployment
 Run the executable with the following options:
 
 ```bash
-./copy-deployment -n <namespace> -d <deployment_name>
+./copy-deployment -n <namespace> -d <deployment_name> -t <tag_image>
 ```
 
 - `<namespace>`: (Optional) The namespace of the deployment to duplicate. Defaults to `namespace-test`.
 - `<deployment_name>`: (Optional) The name of the deployment to duplicate. Defaults to `deployment-test`.
+- `<tag_image>`: (Optional) The tag of the image of the deployment. Defaults is an empty string.
 
 ### Example
 

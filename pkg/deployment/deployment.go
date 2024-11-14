@@ -129,7 +129,7 @@ func Execute() {
 		os.Exit(1)
 	}
 
-	// Assume tagName is already defined and contains the tag value
+	// Assume tagImage is already defined and contains the tag value
 	if tagImage != "" {
 		// Retrieve the current image name
 		output, err := exec.Command("yq", "e", ".spec.template.spec.containers[0].image", "original-deployment.yaml").CombinedOutput()
