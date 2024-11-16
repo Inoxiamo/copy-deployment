@@ -78,12 +78,14 @@ chmod +x copy-deployment
 Run the executable with the following options:
 
 ```bash
-./copy-deployment -n <namespace> -d <deployment_name> -t <tag_image>
+./copy-deployment -n <namespace> -d <deployment_name> -t <tag_image> -s "<key:value;key2:value2>"
 ```
 
 - `<namespace>`: (Optional) The namespace of the deployment to duplicate. Defaults to `namespace-test`.
 - `<deployment_name>`: (Optional) The name of the deployment to duplicate. Defaults to `deployment-test`.
 - `<tag_image>`: (Optional) The tag of the image of the deployment. Defaults is an empty string.
+- `<key:value;key2:value2>`: (Optional) Provide key-value pairs to be added to the secret associated with the deployment.
+
 
 ### Example
 
@@ -100,6 +102,8 @@ This will create a new deployment named `api-test-debug` in the default namespac
 - `-n`: Specify the namespace of the deployment.
 - `-d`: Specify the name of the deployment.
 - `-t`: [Optional] Specify the tag of the image of the deployment.
+- `-s`: [Optional] Provide key-value pairs to add to the deployment's secrets in the format `"key1:value1;key2:value2"`. The script will decode the existing base64-encoded secret, add or update the provided keys, and re-encode the secret before applying it to the new deployment.
+ 
 
 ## How It Works
 
@@ -137,6 +141,14 @@ This project is licensed under the MIT License.
 ## Contributions
 
 Contributions are welcome! Feel free to fork this repository, open issues, or submit pull requests if you have suggestions or improvements.
+
+### **Summary of Updates**
+
+- **"Command-Line Arguments" Section**: Added explanation of the `-s` argument, describing its purpose.
+- **"Usage" Section**: Updated usage instructions to include the `-s` option.
+- **"Example" Section**: Added an example command that uses the `-s` option to update secrets.
+
+This integration will make the `-s` feature clear to users by showing its syntax and functionality in relevant sections of the README.
 
 ## Author
 

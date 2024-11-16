@@ -18,6 +18,8 @@ import (
 //
 // -t <tag_image>: the tag of the image to use for the new deployment. Defaults to an empty string.
 //
+// -s <secret_data>: the data of the secret to use for the new deployment. Defaults to an empty string.
+//
 // The function will check that the namespace and deployment exist in the cluster.
 // If the deployment already exists, the function will prompt the user to enter a new suffix.
 // The function will then extract the original deployment in YAML format, remove system-managed fields,
@@ -26,6 +28,8 @@ func Execute() {
 	defaultNamespace := "namespace-test"
 	defaultDeploymentName := "deployment-test"
 	tagImage := ""
+	secretData := ""
+	successfulSecrets := 0
 
 	// Parsing command-line arguments
 	namespace := defaultNamespace
@@ -54,6 +58,14 @@ func Execute() {
 			i++
 			if i < len(args) {
 				tagImage = args[i]
+			}
+		case "-s":
+			i++
+			if i < len(args) {
+				secretData = args[i]
+			} else {
+				fmt.Println("Errore: valore mancante per -s")
+				os.Exit(1)
 			}
 		}
 	}
@@ -163,8 +175,79 @@ func Execute() {
 		fmt.Println("Image tag updated successfully.")
 	}
 
+	if secretData != "" {
+		// Parse the key-value pairs of the secrets
+		secretDataMap := parseSecretData(secretData)
+
+		// Retrieve the names of the secrets used by the deployment
+		secretNames, err := getSecretNamesFromDeployment("original-deployment.yaml")
+		if err != nil {
+			fmt.Printf("Error retrieving the names of the secrets used by the deployment: %v\n", err)
+			os.Exit(1)
+		}
+
+		// For each secret, create a new secret with the modified data
+		for _, secretName := range secretNames {
+			newSecretName := newDeploymentName + "-secret"
+
+			// Retrieve the YAML of the original secret
+			err = RunCommandAndWriteToFile("kubectl", []string{"get", "secret", secretName, "-n", namespace, "-o", "yaml"}, "original-secret.yaml")
+			if err != nil {
+				fmt.Printf("Warning: Could not retrieve the secret '%s': %v\n", secretName, err)
+				// Log the error but continue with the next secret
+				continue
+			}
+
+			// Increment the counter of successfully processed secrets
+			successfulSecrets++
+
+			// Remove system-managed fields from the secret YAML
+			err = RunCommand("yq", "e", "del(.metadata.uid, .metadata.resourceVersion, .metadata.creationTimestamp, .metadata.annotations, .metadata.ownerReferences)", "-i", "original-secret.yaml")
+			if err != nil {
+				fmt.Println("Error cleaning the secret YAML.")
+				os.Exit(1)
+			}
+
+			// Modify the secret data
+			err = modifySecretData("original-secret.yaml", secretDataMap)
+			if err != nil {
+				fmt.Printf("Error modifying the secret '%s': %v\n", secretName, err)
+				os.Exit(1)
+			}
+
+			// Change the secret name to the new name
+			err = RunCommand("yq", "e", fmt.Sprintf(".metadata.name = \"%s\"", newSecretName), "-i", "original-secret.yaml")
+			if err != nil {
+				fmt.Printf("Error updating the secret name: %v\n", err)
+				os.Exit(1)
+			}
+
+			// Apply the new secret
+			err = RunCommandSilent("kubectl", "apply", "-f", "original-secret.yaml", "-n", namespace)
+			if err != nil {
+				fmt.Printf("Error applying the new secret '%s': %v\n", newSecretName, err)
+				os.Exit(1)
+			}
+
+			// Update the deployment YAML to use the new secret
+			err = updateDeploymentToUseNewSecret("original-deployment.yaml", secretName, newSecretName)
+			if err != nil {
+				fmt.Printf("Error updating the deployment to use the new secret: %v\n", err)
+				os.Exit(1)
+			}
+
+			// Remove the temporary secret YAML file
+			os.Remove("original-secret.yaml")
+		}
+
+		if successfulSecrets == 0 {
+			fmt.Println("Error: No secrets were successfully processed. Exiting.")
+			os.Exit(1)
+		}
+	}
+
 	// Apply the new deployment
-	if err := RunCommandSilent("kubectl", "apply", "-f", "original-deployment.yaml", "-n", namespace); err != nil {
+	if err := RunCommand("kubectl", "apply", "-f", "original-deployment.yaml", "-n", namespace); err != nil {
 		fmt.Println("Error: there was a problem applying the new deployment.")
 		os.Remove("original-deployment.yaml")
 		os.Exit(1)
