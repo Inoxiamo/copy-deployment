@@ -88,7 +88,7 @@ func parseSecretData(secretData string) map[string]string {
 	data := make(map[string]string)
 	pairs := strings.Split(secretData, ";")
 	for _, pair := range pairs {
-		kv := strings.SplitN(pair, ":", 2)
+		kv := strings.SplitN(pair, "=", 2)
 		if len(kv) == 2 {
 			key := kv[0]
 			value := kv[1]
@@ -102,7 +102,7 @@ func getSecretNamesFromDeployment(deploymentYaml string) ([]string, error) {
 	var secretNames []string
 
 	// Get secret names from environment variables
-	cmd := exec.Command("yq", "e", ".spec.template.spec.containers[].env[].valueFrom.secretKeyRef.name", deploymentYaml)
+	cmd := exec.Command("yq", "e", ".spec.template.spec.containers[].env[].valueFrom.configMapKeyRef.name", deploymentYaml)
 	output, err := cmd.Output()
 	if err == nil {
 		names := strings.Split(strings.TrimSpace(string(output)), "\n")
@@ -142,7 +142,7 @@ func getSecretNamesFromDeployment(deploymentYaml string) ([]string, error) {
 // The function will return an error if there is an issue with reading or modifying the secret YAML file.
 func modifySecretData(secretYaml string, newData map[string]string) error {
 	// Extract the value of the blob base64 from the .data.config field
-	cmd := exec.Command("yq", "e", ".data.config", secretYaml)
+	cmd := exec.Command("yq", "e", ".data[\"secrets.env\"]", secretYaml)
 	output, err := cmd.Output()
 	if err != nil {
 		return fmt.Errorf("Error reading the blob value from the secret: %v", err)
@@ -176,7 +176,7 @@ func modifySecretData(secretYaml string, newData map[string]string) error {
 	updatedBase64Blob := base64.StdEncoding.EncodeToString([]byte(updatedContent))
 
 	// Update the value of .data.config in the secret YAML file
-	err = RunCommand("yq", "e", fmt.Sprintf(".data.config = \"%s\"", updatedBase64Blob), "-i", secretYaml)
+	err = RunCommand("yq", "e", fmt.Sprintf(".data[\"secrets.env\"] = \"%s\"", updatedBase64Blob), "-i", secretYaml)
 	if err != nil {
 		return fmt.Errorf("Error updating the blob value in the secret: %v", err)
 	}
@@ -226,7 +226,7 @@ func buildKeyValueContent(data map[string]string) string {
 // The function will return an error if there is an issue with modifying the deployment YAML file.
 func updateDeploymentToUseNewSecret(deploymentYaml, oldSecretName, newSecretName string) error {
 	// Update the names of the secret in the environment variables
-	err := RunCommand("yq", "e", fmt.Sprintf(`(.spec.template.spec.containers[].env[].valueFrom.secretKeyRef | select(.name == "%s")).name = "%s"`, oldSecretName, newSecretName), "-i", deploymentYaml)
+	err := RunCommand("yq", "e", fmt.Sprintf(`(.spec.template.spec.containers[].env[].valueFrom.configMapKeyRef | select(.name == "%s")).name = "%s"`, oldSecretName, newSecretName), "-i", deploymentYaml)
 	if err != nil {
 		return err
 	}

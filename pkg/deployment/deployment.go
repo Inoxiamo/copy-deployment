@@ -29,6 +29,7 @@ func Execute() {
 	defaultDeploymentName := "deployment-test"
 	tagImage := ""
 	secretData := ""
+	successfulSecrets := 0
 
 	// Parsing command-line arguments
 	namespace := defaultNamespace
@@ -187,14 +188,18 @@ func Execute() {
 
 		// For each secret, create a new secret with the modified data
 		for _, secretName := range secretNames {
-			newSecretName := secretName + "-" + newDeploymentName
+			newSecretName := newDeploymentName + "-secret"
 
 			// Retrieve the YAML of the original secret
 			err = RunCommandAndWriteToFile("kubectl", []string{"get", "secret", secretName, "-n", namespace, "-o", "yaml"}, "original-secret.yaml")
 			if err != nil {
-				fmt.Printf("Error retrieving the secret '%s': %v\n", secretName, err)
-				os.Exit(1)
+				fmt.Printf("Warning: Could not retrieve the secret '%s': %v\n", secretName, err)
+				// Log the error but continue with the next secret
+				continue
 			}
+
+			// Increment the counter of successfully processed secrets
+			successfulSecrets++
 
 			// Remove system-managed fields from the secret YAML
 			err = RunCommand("yq", "e", "del(.metadata.uid, .metadata.resourceVersion, .metadata.creationTimestamp, .metadata.annotations, .metadata.ownerReferences)", "-i", "original-secret.yaml")
@@ -234,10 +239,15 @@ func Execute() {
 			// Remove the temporary secret YAML file
 			os.Remove("original-secret.yaml")
 		}
+
+		if successfulSecrets == 0 {
+			fmt.Println("Error: No secrets were successfully processed. Exiting.")
+			os.Exit(1)
+		}
 	}
 
 	// Apply the new deployment
-	if err := RunCommandSilent("kubectl", "apply", "-f", "original-deployment.yaml", "-n", namespace); err != nil {
+	if err := RunCommand("kubectl", "apply", "-f", "original-deployment.yaml", "-n", namespace); err != nil {
 		fmt.Println("Error: there was a problem applying the new deployment.")
 		os.Remove("original-deployment.yaml")
 		os.Exit(1)
