@@ -2,6 +2,7 @@ package deployment
 
 import (
 	"bufio"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"os/exec"
@@ -80,5 +81,83 @@ func RunCommandAndWriteToFile(name string, args []string, filename string) error
 		return err
 	}
 
+	return nil
+}
+
+func parseSecretData(secretData string) map[string]string {
+	data := make(map[string]string)
+	pairs := strings.Split(secretData, ";")
+	for _, pair := range pairs {
+		kv := strings.SplitN(pair, ":", 2)
+		if len(kv) == 2 {
+			key := kv[0]
+			value := kv[1]
+			data[key] = value
+		}
+	}
+	return data
+}
+
+func getSecretNamesFromDeployment(deploymentYaml string) ([]string, error) {
+	var secretNames []string
+
+	// Ottiene i nomi dei secret dalle variabili d'ambiente
+	cmd := exec.Command("yq", "e", ".spec.template.spec.containers[].env[].valueFrom.secretKeyRef.name", deploymentYaml)
+	output, err := cmd.Output()
+	if err == nil {
+		names := strings.Split(strings.TrimSpace(string(output)), "\n")
+		secretNames = append(secretNames, names...)
+	}
+
+	// Ottiene i nomi dei secret dai volumi
+	cmd = exec.Command("yq", "e", ".spec.template.spec.volumes[].secret.secretName", deploymentYaml)
+	output, err = cmd.Output()
+	if err == nil {
+		names := strings.Split(strings.TrimSpace(string(output)), "\n")
+		secretNames = append(secretNames, names...)
+	}
+
+	// Rimuove duplicati
+	secretMap := make(map[string]bool)
+	uniqueSecretNames := []string{}
+	for _, name := range secretNames {
+		name = strings.TrimSpace(name)
+		if name != "" && !secretMap[name] {
+			secretMap[name] = true
+			uniqueSecretNames = append(uniqueSecretNames, name)
+		}
+	}
+
+	if len(uniqueSecretNames) == 0 {
+		return nil, fmt.Errorf("Nessun secret trovato nel deployment")
+	}
+
+	return uniqueSecretNames, nil
+}
+
+func modifySecretData(secretYaml string, newData map[string]string) error {
+	for key, value := range newData {
+		// Codifica in base64 il valore
+		encodedValue := base64.StdEncoding.EncodeToString([]byte(value))
+		// Aggiorna o aggiunge il campo data
+		err := RunCommand("yq", "e", fmt.Sprintf(".data.%s = \"%s\"", key, encodedValue), "-i", secretYaml)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func updateDeploymentToUseNewSecret(deploymentYaml, oldSecretName, newSecretName string) error {
+	// Aggiorna i nomi dei secret nelle variabili d'ambiente
+	err := RunCommand("yq", "e", fmt.Sprintf(`(.spec.template.spec.containers[].env[].valueFrom.secretKeyRef | select(.name == "%s")).name = "%s"`, oldSecretName, newSecretName), "-i", deploymentYaml)
+	if err != nil {
+		return err
+	}
+	// Aggiorna i nomi dei secret nei volumi
+	err = RunCommand("yq", "e", fmt.Sprintf(`(.spec.template.spec.volumes[].secret | select(.secretName == "%s")).secretName = "%s"`, oldSecretName, newSecretName), "-i", deploymentYaml)
+	if err != nil {
+		return err
+	}
 	return nil
 }
