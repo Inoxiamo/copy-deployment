@@ -225,13 +225,8 @@ func buildKeyValueContent(data map[string]string) string {
 // The function will update the names of the secret in the environment variables and volumes.
 // The function will return an error if there is an issue with modifying the deployment YAML file.
 func updateDeploymentToUseNewSecret(deploymentYaml, oldSecretName, newSecretName string) error {
-	// Update the names of the secret in the environment variables
-	err := RunCommand("yq", "e", fmt.Sprintf(`(.spec.template.spec.containers[].env[].valueFrom.configMapKeyRef | select(.name == "%s")).name = "%s"`, oldSecretName, newSecretName), "-i", deploymentYaml)
-	if err != nil {
-		return err
-	}
 	// Update the names of the secret in the volumes
-	err = RunCommand("yq", "e", fmt.Sprintf(`(.spec.template.spec.volumes[].secret | select(.secretName == "%s")).secretName = "%s"`, oldSecretName, newSecretName), "-i", deploymentYaml)
+	err := RunCommand("yq", "e", fmt.Sprintf(`(.spec.template.spec.volumes[].secret | select(.secretName == "%s")).secretName = "%s"`, oldSecretName, newSecretName), "-i", deploymentYaml)
 	if err != nil {
 		return err
 	}
